@@ -1,0 +1,17 @@
+# 构建产物
+hub/out/
+hub/classes/
+client/out/
+
+# 平台签名私钥（绝不能入库）
+keys/*
+!keys/README.md
+
+# 版权敏感的 SDK dex（从设备提取，不分发）
+*.dex
+visbot1.dex
+
+# 临时文件
+*.tmp
+*.log
+.DS_Store
