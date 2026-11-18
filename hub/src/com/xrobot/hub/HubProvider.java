@@ -2,20 +2,21 @@ package com.xrobot.hub;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
 /**
- * 机器人中枢：所有 App 通过本 Provider 下发命令，中枢选择驱动执行。
+ * 机器人中枢 · ContentProvider 入口（兼容老调用方）。
  *
  * 新 authority（推荐）： content://com.xrobot.hub.api
  * 兼容 authority（旧版）： content://com.visbot.robotctl.api
  *
- * 客户端只需 ContentResolver.call(uri, method, arg, extras)，
- * 返回值统一含 ok(boolean)，失败时 msg(String) 给出原因。
+ * 本类只做参数解析，实际执行委托给全局 CommandQueue —— 因此 Provider 调用与
+ * HTTP 调用走同一条串行队列，多调用方之间不会冲突。
+ *
+ * 注意：新的首选调用方式是本地 HTTP 服务，任何语言零依赖，见 README。
  */
 public final class HubProvider extends ContentProvider {
 
@@ -28,106 +29,39 @@ public final class HubProvider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
+        CommandQueue.get().setContext(getContext());
+        CommandQueue.get().init();
         return true;
     }
 
     @Override
     public Bundle call(String method, String arg, Bundle extras) {
-        Bundle out = new Bundle();
-        out.putBoolean("ok", false);
         try {
-            RobotDriver d = DriverRegistry.active();
-            if (d == null) {
-                out.putString("msg", "没有已注册的机器人驱动");
-                return out;
-            }
-            if ("ping".equals(method)) {
-                out.putString("driver", d.id());
-                out.putString("name", d.displayName());
-                out.putBoolean("ready", d.isReady());
-                out.putString("drivers", join(DriverRegistry.ids()));
-                out.putBoolean("ok", true);
-                return out;
-            }
-            if ("capabilities".equals(method)) {
-                out.putStringArray("capabilities", d.capabilities());
-                out.putString("driver", d.id());
-                out.putString("name", d.displayName());
-                out.putBoolean("ok", true);
-                return out;
-            }
-            if ("status".equals(method)) {
-                out.putString("status", d.status());
-                out.putString("driver", d.id());
-                out.putBoolean("ok", true);
-                return out;
-            }
-            if ("info".equals(method)) {
-                out.putString("info", d.info());
-                out.putString("driver", d.id());
-                out.putString("name", d.displayName());
-                out.putBoolean("ok", true);
-                return out;
-            }
-            if ("stop".equals(method)) {
-                d.stopVision();
-                d.stop();
-                out.putBoolean("ok", true);
-                return out;
-            }
-            if ("detect".equals(method) || "goto".equals(method)) {
-                if (!has(d, "vision")) return unsupported(out, d, "vision");
-                Context ctx = getContext();
-                d.startVision(ctx, arg, "detect".equals(method));
-                out.putBoolean("ok", true);
-                return out;
-            }
-
-            // 动作类命令：先做能力检查，再取参数，最后下发
-            String cap = capOf(method);
-            if (cap == null) {
-                out.putString("msg", "未知命令: " + method);
-                return out;
-            }
-            if (!has(d, cap)) return unsupported(out, d, cap);
-
-            float[] p = pair(arg, def1(method), def2(method));
-            float a = req(extras, "arg1", p[0]);
-            float b = req(extras, "arg2", p[1]);
-
-            if ("move".equals(method)) d.move(a, b);
-            else if ("turn".equals(method)) d.turn(a, b);
-            else if ("rawTurn".equals(method)) d.turnRaw(a, b);
-            else if ("head".equals(method)) d.head(a, b);
-
-            out.putBoolean("ok", true);
-            return out;
+            float[] p = parseParams(method, arg, extras);
+            String color = parseColor(method, arg, extras);
+            return CommandQueue.get().exec(method, p[0], p[1], color);
         } catch (Throwable t) {
             Log.e(TAG, "call " + method + " 失败", t);
+            Bundle out = new Bundle();
+            out.putBoolean("ok", false);
             out.putString("msg", t.getClass().getSimpleName() + ": " + t.getMessage());
             return out;
         }
     }
 
-    /** 把动作方法映射到能力名 */
-    private static String capOf(String method) {
-        if (method == null) return null;
-        if ("move".equals(method)) return "move";
-        if ("turn".equals(method) || "rawTurn".equals(method)) return "turn";
-        if ("head".equals(method)) return "head";
-        return null;
+    private static float[] parseParams(String method, String arg, Bundle extras) {
+        float d1 = def1(method), d2 = def2(method);
+        float[] p = pair(arg, d1, d2);
+        float a = req(extras, "arg1", p[0]);
+        float b = req(extras, "arg2", p[1]);
+        return new float[]{a, b};
     }
 
-    private static boolean has(RobotDriver d, String cap) {
-        String[] cs = d.capabilities();
-        if (cs == null) return false;
-        for (String c : cs) if (c.equals(cap)) return true;
-        return false;
-    }
-
-    private static Bundle unsupported(Bundle out, RobotDriver d, String cap) {
-        out.putString("msg", "驱动 " + d.id() + " 不支持能力: " + cap);
-        return out;
+    private static String parseColor(String method, String arg, Bundle extras) {
+        if (!"detect".equals(method) && !"goto".equals(method)) return null;
+        if (arg != null && !arg.contains(",")) return arg;   // 颜色字符串，无逗号
+        if (extras != null && extras.containsKey("color")) return String.valueOf(extras.get("color"));
+        return "red";
     }
 
     private static float def1(String method) {
@@ -166,16 +100,6 @@ public final class HubProvider extends ContentProvider {
                 return def;
             }
         }
-    }
-
-    private static String join(String[] arr) {
-        if (arr == null || arr.length == 0) return "";
-        StringBuilder sb = new StringBuilder();
-        for (String s : arr) {
-            if (sb.length() > 0) sb.append(",");
-            sb.append(s);
-        }
-        return sb.toString();
     }
 
     @Override public Cursor query(Uri u, String[] p, String s, String[] a, String o) { return null; }
