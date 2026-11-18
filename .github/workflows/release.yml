@@ -1,0 +1,88 @@
+name: 自动发版
+
+# 推送到 main 即发版：算版本 → 生成更新日志 → 构建 APK → 发 Release → 回提交日志
+# CHANGELOG.md 由本流程自己维护，忽略它以防回提交造成循环（GITHUB_TOKEN 的 push 本身也不会再触发）
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# 同一分支同时只允许一个发版在跑，避免版本号/日志错乱
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出完整历史（需要 tag 与 git log）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 安装 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 安装 build-tools 与 platform
+        run: sdkmanager "platforms;android-33" "build-tools;34.0.0"
+
+      - name: 计算版本号并生成更新日志
+        id: meta
+        run: |
+          VERSION="$(python3 tools/gen_changelog.py --next-only)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "本次发版版本：$VERSION"
+          python3 tools/gen_changelog.py --changelog CHANGELOG.md --notes-out .release_notes.md
+
+      - name: 注入平台签名密钥
+        env:
+          PK8_B64: ${{ secrets.PLATFORM_PK8_B64 }}
+          X509_B64: ${{ secrets.PLATFORM_X509_B64 }}
+        run: |
+          if [ -z "$PK8_B64" ] || [ -z "$X509_B64" ]; then
+            echo "::warning::未配置签名 Secrets，将产出 debug 包（无法控制底盘）。请在 Settings → Secrets 添加 PLATFORM_PK8_B64 与 PLATFORM_X509_B64。"
+          else
+            printf '%s' "$PK8_B64" | base64 -d > keys/platform.pk8
+            printf '%s' "$X509_B64" | base64 -d > keys/platform.x509.pem
+            echo "平台签名密钥已注入"
+          fi
+
+      - name: 构建中枢 APK
+        run: bash tools/build_hub_ci.sh
+
+      - name: 创建 Release 并上传 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="XRobotHub-${{ steps.meta.outputs.version }}.apk"
+          cp hub/out/XRobotHub.apk "$APK"
+          gh release create "${{ steps.meta.outputs.version }}" \
+            --title "XRobot 中枢 ${{ steps.meta.outputs.version }}" \
+            --notes-file .release_notes.md \
+            "$APK"
+          echo "已发布 $APK"
+
+      - name: 回提交更新日志
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: 自动更新更新日志 [skip ci]"
+            git push
+            echo "更新日志已回提交"
+          else
+            echo "更新日志无变化，跳过提交"
+          fi

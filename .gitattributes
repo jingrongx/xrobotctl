@@ -1,0 +1,5 @@
+# Linux 上执行的脚本与工作流必须用 LF，否则 runner 报 \r: command not found
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf

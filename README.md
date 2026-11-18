@@ -124,6 +124,25 @@ docs/              文档
 ./tools/build_hub.sh       # 中枢 APK（需平台签名）→ hub/out/XRobotHub.apk
 ```
 
+## 自动发版
+
+**推送到 `main` 即自动发版**，无需手动打包或上传：
+
+- 自动按版本号递增（首次 `v1.0.0`，之后 patch +1），打 tag、建 Release
+- 自动汇总本次提交生成 [更新日志](CHANGELOG.md) 作为 Release Notes
+- 自动构建带平台签名的 `XRobotHub-<版本>.apk` 作为附件
+- 直接从 Release 下载 APK 即可安装，不必本地跑构建脚本
+
+配置（仅一次）：在仓库 **Settings → Secrets and variables → Actions** 添加两个 Secret：
+
+| Secret | 内容 |
+|---|---|
+| `PLATFORM_PK8_B64` | `keys/platform.pk8` 的 base64 |
+| `PLATFORM_X509_B64` | `keys/platform.x509.pem` 的 base64 |
+
+生成命令：`base64 -w0 keys/platform.pk8`、`base64 -w0 keys/platform.x509.pem`。
+不配也能发版，但 APK 是 debug 签名、拿不到底盘权限。详见 [发版说明](docs/发版说明.md)。
+
 ## 详细文档
 
 - **[HTTP 接口](docs/HTTP接口.md)** — 命令清单、参数、并发规则（首选）
@@ -131,4 +150,5 @@ docs/              文档
 - [客户端集成指南](docs/客户端集成.md) — Provider 方式（旧版）
 - [新增机器人驱动](docs/新增机器人驱动.md) — 如何接入新机型
 - [部署说明](docs/部署说明.md) — root、平台签名、SDK dex、常驻要点
+- [发版说明](docs/发版说明.md) — 自动发版流程、版本规则、Secrets 配置
 - [命令协议](docs/命令协议.md) — Provider 方法与参数
