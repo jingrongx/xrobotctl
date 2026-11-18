@@ -32,11 +32,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: 安装 Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: 安装 build-tools 与 platform
-        run: sdkmanager "platforms;android-33" "build-tools;34.0.0"
+        # ubuntu runner 预装 Android SDK（/usr/local/lib/android/sdk），直接用其 sdkmanager
+        run: |
+          SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)"
+          echo "sdkmanager: $SDKMGR"
+          yes | "$SDKMGR" --sdk_root="$ANDROID_HOME" "platforms;android-33" "build-tools;34.0.0"
+          ls "$ANDROID_HOME/build-tools" && ls "$ANDROID_HOME/platforms"
 
       - name: 计算版本号并生成更新日志
         id: meta

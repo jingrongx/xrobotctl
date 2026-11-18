@@ -4,7 +4,13 @@
 set -euo pipefail
 
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+if [ -z "$SDK" ]; then
+  for candidate in /usr/local/lib/android/sdk "$HOME/Android/Sdk"; do
+    [ -d "$candidate" ] && SDK="$candidate" && break
+  done
+fi
 if [ -z "$SDK" ]; then echo "缺少 ANDROID_HOME"; exit 1; fi
+echo "Android SDK: $SDK"
 BT="$SDK/build-tools/34.0.0"
 AJ="$SDK/platforms/android-33/android.jar"
 [ -x "$BT/aapt2" ] || BT="$SDK/build-tools/36.1.0"
