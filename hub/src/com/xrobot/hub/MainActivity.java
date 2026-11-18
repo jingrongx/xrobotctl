@@ -59,6 +59,11 @@ public final class MainActivity extends Activity {
         super.onCreate(b);
         updater = new Updater(this);
 
+        // 固件有"空闲 30 秒踢回桌面"的定制行为（PowerManagerService idle timeout →
+        // com.ubtech.visbot.LOCK_UI / HOME）。控制界面必须保持屏幕活跃，否则等测速/下载
+        // 时手一停就被踢。FLAG_KEEP_SCREEN_ON 在窗口可见期间持续刷新屏幕状态。
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.parseColor("#F7F6F2"));
