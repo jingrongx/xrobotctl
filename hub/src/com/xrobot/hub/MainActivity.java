@@ -44,6 +44,10 @@ public final class MainActivity extends Activity {
     private Updater updater;
 
     private TextView tvService, tvBattery, tvQueue;
+    /** 用户主动退出标志：设置页「退出应用」置位后，不再自动拉回 */
+    private static volatile boolean reallyExit = false;
+    /** 最近一次用户操作（点按钮）的时间，用于区分"被系统踢走"和"用户主动离开" */
+    private static volatile long lastUserActionMs = 0;
     private TextView tvLog;
     private TextView tvVersion, tvUpdateInfo, tvLines, tvUpdateLog, tvRootState;
     private ProgressBar progress;
@@ -213,6 +217,7 @@ public final class MainActivity extends Activity {
     }
 
     private void send(final String method, final float a, final float b, final String color, final String label) {
+        lastUserActionMs = System.currentTimeMillis();
         apiLog("› " + label + " 已发送", "#185FA5");
         new Thread(new Runnable() {
             @Override public void run() {
@@ -328,6 +333,22 @@ public final class MainActivity extends Activity {
         settings.addView(proxyRow);
         page.addView(settings, wrapW());
 
+        // 固件 IdleScreen 会把本应用踢回桌面（自动拉回对策），需要真退出时用这个按钮
+        LinearLayout exitRow = row();
+        Button btnExit = bigBtn("退出应用", "#A32D2D", new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                reallyExit = true;
+                try { stopService(new Intent(MainActivity.this, HubService.class)); } catch (Throwable ignored) {}
+                finishAffinity();
+            }
+        });
+        exitRow.addView(btnExit, hlp(1));
+        exitRow.addView(new View(this), hlp(1));
+        exitRow.addView(new View(this), hlp(1));
+        exitRow.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(34)));
+        page.addView(exitRow, wrapW());
+
         LinearLayout logBox = card("#FFFFFF", "#D3D1C7");
         tvUpdateLog = tv("等待操作…", 11, "#2C2C2A", false);
         tvUpdateLog.setTypeface(Typeface.MONOSPACE);
@@ -390,6 +411,7 @@ public final class MainActivity extends Activity {
         busyCheck = true;
         btnCheck.setEnabled(false);
         tvUpdateInfo.setText("正在检测…");
+        lastUserActionMs = System.currentTimeMillis();
         new Thread(new Runnable() {
             @Override public void run() {
                 try {
@@ -446,6 +468,7 @@ public final class MainActivity extends Activity {
     }
 
     private void doUpdate() {
+        lastUserActionMs = System.currentTimeMillis();
         if (busyUpdate) return;
         if (latest == null) {
             logUpdate("请先点「检查更新」", "#BA7517");
@@ -696,6 +719,37 @@ public final class MainActivity extends Activity {
     private int dp(int v) {
         return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
                 getResources().getDisplayMetrics()));
+    }
+
+    @Override
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        scheduleSelfRevive();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        scheduleSelfRevive();
+    }
+
+    /** 固件 IdleScreen 会把非待机应用踢回桌面（点抬头/更新中途都会被踢）。
+     *  这里在"非用户主动离开"时自动把自己拉回前台；真正退出走「退出应用」按钮。 */
+    private void scheduleSelfRevive() {
+        if (reallyExit) return;
+        boolean recent = System.currentTimeMillis() - lastUserActionMs < 15000;
+        if (!recent) return; // 用户主动离开（无近期操作），尊重其选择
+        h.postDelayed(new Runnable() {
+            @Override public void run() {
+                if (reallyExit) return;
+                try {
+                    Intent it = new Intent(MainActivity.this, MainActivity.class);
+                    it.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                    startActivity(it);
+                } catch (Throwable ignored) {}
+            }
+        }, 500);
     }
 
     @Override
