@@ -61,6 +61,26 @@ jobs:
             echo "平台签名密钥已注入"
           fi
 
+      - name: 同步版本号到 Manifest
+        # 把 app 的 versionCode/versionName 写成 release tag，app 才能正确判断是否有新版
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"      # 形如 v1.0.2
+          NUM="${VERSION#v}"                                # 1.0.2
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$NUM"
+          MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+          CODE=$((MAJOR*10000 + MINOR*100 + PATCH))
+          echo "versionName=$NUM  versionCode=$CODE"
+          python3 - "$NUM" "$CODE" <<'PY'
+          import re, sys
+          name, code = sys.argv[1], sys.argv[2]
+          p = 'hub/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          s = re.sub(r'android:versionCode="[^"]*"', 'android:versionCode="%s"' % code, s, count=1)
+          s = re.sub(r'android:versionName="[^"]*"', 'android:versionName="%s"' % name, s, count=1)
+          open(p, 'w', encoding='utf-8').write(s)
+          print(open(p, encoding='utf-8').read().splitlines()[2:5])
+          PY
+
       - name: 构建中枢 APK
         run: bash tools/build_hub_ci.sh
 

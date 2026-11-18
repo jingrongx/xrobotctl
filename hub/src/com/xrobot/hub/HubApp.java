@@ -41,5 +41,29 @@ public final class HubApp extends Application {
 
         Log.i("XRobotHub", "中枢就绪: " + DriverRegistry.describe()
                 + " | HTTP :" + LocalHttpServer.PORT);
+
+        startAutoUpdateCheck();
+    }
+
+    /** 启动后异步检测更新（受设置开关控制），发现新版本发通知，不打断当前控制流程 */
+    private void startAutoUpdateCheck() {
+        final Updater updater = new Updater(this);
+        if (!updater.autoCheck()) return;
+        new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    Thread.sleep(3000); // 让 SDK/HTTP 服务先就绪，避免抢启动资源
+                    Updater.Release r = updater.check();
+                    if (updater.isNewer(r)) {
+                        UpdateNotifier.show(HubApp.this,
+                                "XRobot 发现新版本 " + r.tag,
+                                "点击查看更新中心，一键下载安装");
+                        Log.i("XRobotUpdater", "启动检测发现新版本 " + r.tag);
+                    }
+                } catch (Throwable t) {
+                    Log.w("XRobotUpdater", "启动检测失败（不影响使用）: " + t.getMessage());
+                }
+            }
+        }, "xrobot-auto-update").start();
     }
 }
