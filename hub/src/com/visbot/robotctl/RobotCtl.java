@@ -8,7 +8,9 @@ package com.visbot.robotctl;
  *     SDK 自带 moveStraightBy() 在本机 dex 上会传错参数（distance=0、速度溢出）。
  *  2. 距离不能为负，后退靠「负速度」。
  *  3. 左转精确；右转机械打滑，负角度自动换算成等效左转 (360-|a|)。
- *  4. 头部只有一个舵机 id=head，范围 -23~25°，速度 2~30。
+ *  4. 头部只有一个舵机 id=head，速度 2~30。
+ *  5. 头部舵机「正角度=低头」，本层对角度取反：调用方传正数=抬头，
+ *     因此调用方有效范围是 +23（抬头极限）~ -25（低头极限）。
  */
 public final class RobotCtl {
 
@@ -116,7 +118,8 @@ public final class RobotCtl {
         }
     }
 
-    /** 头部：角度 -23~25，速度 2~30（0=默认） */
+    /** 头部：角度 正=抬头（+23 极限）、负=低头（-25 极限），速度 2~30（0=默认）。
+     *  舵机本体正角度=低头，这里统一取反，保证 UI 与 HTTP 的「正=抬头」语义正确。 */
     public static void head(float angle, float speed) {
         try {
             Object svc = Sdk.service("servo");
@@ -127,7 +130,7 @@ public final class RobotCtl {
             float sp = speed > 0 ? speed
                     : (Float) dev.getClass().getMethod("getDefaultSpeed").invoke(dev);
             svc.getClass().getMethod("rotateTo", String.class, float.class, float.class)
-                    .invoke(svc, id, angle, sp);
+                    .invoke(svc, id, -angle, sp);
         } catch (Throwable t) {
             throw rt(t);
         }

@@ -31,7 +31,7 @@ curl "http://$HOST:8899/move?dist=30&speed=10"     # 前进30cm
 curl "http://$HOST:8899/move?dist=30&speed=-10"    # 后退30cm
 curl "http://$HOST:8899/turn?angle=90&speed=60"    # 左转90°
 curl "http://$HOST:8899/turn?angle=-90&speed=60"   # 右转90°
-curl "http://$HOST:8899/head?angle=25"             # 抬头25°
+curl "http://$HOST:8899/head?angle=23"             # 抬头23°（正=抬头，负=低头）
 curl "http://$HOST:8899/stop"                      # 急停
 curl "http://$HOST:8899/goto?color=red"            # 找红色目标并走过去
 

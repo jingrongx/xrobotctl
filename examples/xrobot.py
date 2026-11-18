@@ -11,7 +11,7 @@ XRobot Python 客户端 —— 零依赖，只用标准库。
     r.move(30, -10)                   # 后退
     r.turn(90)                        # 左转 90°
     r.turn(-90)                       # 右转 90°
-    r.head(25)                        # 抬头
+    r.head(23)                        # 抬头（正=抬头，+23 极限；负=低头，-25 极限）
     r.stop()                          # 急停
     r.goto_color("red")               # 找红色目标并走过去
     print(r.status())
@@ -45,7 +45,7 @@ class XRobot:
         return self.call("turn", angle=angle, speed=speed, wait=int(wait))
 
     def head(self, angle=0, speed=0, wait=False):
-        """头部俯仰，-23~+25°"""
+        """头部俯仰，正=抬头（+23 极限）、负=低头（-25 极限）"""
         return self.call("head", angle=angle, speed=speed, wait=int(wait))
 
     def stop(self):

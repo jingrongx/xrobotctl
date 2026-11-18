@@ -63,25 +63,7 @@ public final class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.parseColor("#F7F6F2"));
 
-        // 顶部标题 + 状态徽章
-        LinearLayout header = row();
-        header.setBackgroundColor(Color.WHITE);
-        header.setPadding(dp(10), dp(6), dp(10), dp(6));
-        header.addView(tv("XRobot 中枢", 15, "#1F2937", true), wrapW());
-        LinearLayout badges = row();
-        badges.setGravity(Gravity.END);
-        tvService = badge("#EAF3DE", "#27500A", "服务 检测中");
-        tvBattery = badge("#FAEEDA", "#854F0B", "电量 --");
-        tvQueue = badge("#E6F1FB", "#0C447C", "队列 0");
-        badges.addView(tvService, wrapW());
-        badges.addView(space(6), wrapW());
-        badges.addView(tvBattery, wrapW());
-        badges.addView(space(6), wrapW());
-        badges.addView(tvQueue, wrapW());
-        header.addView(badges, hlp(1));
-        root.addView(header, wrapW());
-
-        // 内容区（两页切换）
+        // 内容区（两页切换）。不设自绘标题行：系统标题栏已显示应用名，节省竖向空间。
         final View pageControl = controlPage();
         final View pageUpdate = updatePage();
         final LinearLayout pages = new LinearLayout(this);
@@ -164,21 +146,32 @@ public final class MainActivity extends Activity {
         }), vlp(24));
         page.addView(left, hlp(44));
 
-        // 右：头部 / 快捷 / 日志
+        // 右：状态徽章 / 头部 / 快捷 / 日志
         LinearLayout right = new LinearLayout(this);
         right.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout badges = row();
+        badges.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        tvService = badge("#EAF3DE", "#27500A", "服务 检测中", 9);
+        tvBattery = badge("#FAEEDA", "#854F0B", "电量 --", 9);
+        tvQueue = badge("#E6F1FB", "#0C447C", "队列 0", 9);
+        badges.addView(tvService);
+        badges.addView(space(4));
+        badges.addView(tvBattery);
+        badges.addView(space(4));
+        badges.addView(tvQueue);
+        right.addView(badges, wrapW());
         right.addView(section("头部控制", "#FBEAF0", "#993556", new String[]{"抬头", "回正", "低头"},
                 new String[]{"#ED93B1", "#ED93B1", "#ED93B1"}, new Runnable[]{
-                        new Runnable() { @Override public void run() { send("head", 25f, 15f, null, "抬头"); } },
+                        new Runnable() { @Override public void run() { send("head", 23f, 15f, null, "抬头"); } },
                         new Runnable() { @Override public void run() { send("head", 0f, 15f, null, "头部回正"); } },
-                        new Runnable() { @Override public void run() { send("head", -23f, 15f, null, "低头"); } }
-                }), vlp(27));
+                        new Runnable() { @Override public void run() { send("head", -25f, 15f, null, "低头"); } }
+                }), vlp(36));
         right.addView(section("快捷动作", "#EAF3DE", "#3B6D11", new String[]{"找红球", "走方形", "转一圈"},
                 new String[]{"#97C459", "#97C459", "#97C459"}, new Runnable[]{
                         new Runnable() { @Override public void run() { send("goto", 0, 0, "red", "找红球"); } },
                         new Runnable() { @Override public void run() { square(); } },
                         new Runnable() { @Override public void run() { send("turn", 360f, 60f, null, "转一圈 360°"); } }
-                }), vlp(27));
+                }), vlp(36));
         LinearLayout logBox = new LinearLayout(this);
         logBox.setOrientation(LinearLayout.VERTICAL);
         logBox.setBackgroundColor(Color.parseColor("#EDEBE4"));
@@ -189,7 +182,7 @@ public final class MainActivity extends Activity {
         ScrollView logScroll = new ScrollView(this);
         logScroll.addView(tvLog);
         logBox.addView(logScroll, vlp(1));
-        right.addView(logBox, vlp(46));
+        right.addView(logBox, vlp(28));
         page.addView(right, hlp(56));
         return page;
     }
@@ -200,7 +193,7 @@ public final class MainActivity extends Activity {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setBackgroundColor(Color.parseColor(bg));
         box.setPadding(dp(7), dp(5), dp(7), dp(5));
-        box.addView(tv(title, 11, titleColor, true), wrapW());
+        box.addView(tv(title, 12, titleColor, true), wrapW());
         LinearLayout r = row();
         for (int i = 0; i < labels.length; i++) {
             Button b = smallBtn(labels[i], titleColor, borders[i]);
@@ -593,8 +586,8 @@ public final class MainActivity extends Activity {
         return t;
     }
 
-    private TextView badge(String bg, String fg, String text) {
-        TextView t = tv(text, 10, fg, false);
+    private TextView badge(String bg, String fg, String text, int sp) {
+        TextView t = tv(text, sp, fg, false);
         t.setPadding(dp(6), dp(2), dp(6), dp(2));
         GradientDrawable d = new GradientDrawable();
         d.setColor(Color.parseColor(bg));
@@ -631,7 +624,7 @@ public final class MainActivity extends Activity {
     private Button smallBtn(String text, String fg, String stroke) {
         Button b = new Button(this);
         b.setText(text);
-        b.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        b.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         b.setTextColor(Color.parseColor(fg));
         b.setAllCaps(false);
         GradientDrawable d = new GradientDrawable();
@@ -641,7 +634,7 @@ public final class MainActivity extends Activity {
         b.setBackground(d);
         b.setMinHeight(0);
         b.setMinWidth(0);
-        b.setPadding(dp(2), dp(2), dp(2), dp(2));
+        b.setPadding(dp(4), dp(3), dp(4), dp(3));
         return b;
     }
 

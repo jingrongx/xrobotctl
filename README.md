@@ -28,14 +28,14 @@ adb forward tcp:8899 tcp:8899     # PC 通过 USB；调用方在机器人上则�
 curl "http://127.0.0.1:8899/ping"                    # 看 ready=true
 curl "http://127.0.0.1:8899/move?dist=30&speed=10"   # 前进30cm
 curl "http://127.0.0.1:8899/turn?angle=90"           # 左转90°
-curl "http://127.0.0.1:8899/head?angle=25"           # 抬头
+curl "http://127.0.0.1:8899/head?angle=23"           # 抬头（正=抬头，负=低头）
 curl "http://127.0.0.1:8899/stop"                    # 停止（打断当前动作并清空队列）
 ```
 
 ```python
 from xrobot import XRobot            # 先把 examples/xrobot.py 放到脚本同目录（或加入 PYTHONPATH）
 r = XRobot("127.0.0.1")
-r.move(30, 10); r.turn(90); r.head(25); r.stop()
+r.move(30, 10); r.turn(90); r.head(23); r.stop()
 ```
 
 **就这样——不用导入任何机器人代码，不用权限，不用签名。** 浏览器直接开 `http://<HOST>:8899/ping` 也能看状态。

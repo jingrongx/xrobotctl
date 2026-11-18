@@ -44,7 +44,7 @@ public final class DebugActivity extends Activity {
         root.addView(btn("自检：左转 90°", new Runnable() {
             @Override public void run() { act(1); }
         }));
-        root.addView(btn("自检：抬头 25°", new Runnable() {
+        root.addView(btn("自检：抬头 23°", new Runnable() {
             @Override public void run() { act(2); }
         }));
         root.addView(btn("急停", new Runnable() {
@@ -70,7 +70,7 @@ public final class DebugActivity extends Activity {
                 try {
                     if (what == 0) d.move(30f, 8f);
                     else if (what == 1) d.turn(90f, 60f);
-                    else d.head(25f, 15f);
+                    else d.head(23f, 15f);
                 } catch (Throwable ignored) {
                 }
             }
