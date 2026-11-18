@@ -4,6 +4,7 @@
 
 - **本地 HTTP 服务** —— 任何语言发个 HTTP 请求即可，零依赖、不冲突
 - 目前内置 **优必选「小方头」** 驱动；架构为多机器人设计，加新型号只需实现一个驱动接口
+- 仓库：[jingrongx/xrobotctl](https://github.com/jingrongx/xrobotctl) · 最新 APK：[Releases](https://github.com/jingrongx/xrobotctl/releases/latest)
 
 ---
 
@@ -11,7 +12,9 @@
 
 ### 1. 装中枢
 
-把 `hub/out/XRobotHub.apk` 装到机器人上（需已 root，详见 [部署说明](docs/部署说明.md)）。装完打开一次「XRobot 中枢」，HTTP 服务（端口 8899）即启动并保持常驻。
+从 [Releases](https://github.com/jingrongx/xrobotctl/releases/latest) 下载最新的 `XRobotHub-<版本>.apk` 装到机器人上（需已 root，详见 [部署说明](docs/部署说明.md)）。装完打开一次「XRobot 中枢」，HTTP 服务（端口 8899）即启动并保持常驻。之后 App 内「更新中心」可一键检测/下载/安装新版，不用再手动下载。
+
+> 想自己编译：`./tools/build_hub.sh` → `hub/out/XRobotHub.apk`（需平台签名，见 `keys/README.md`）。
 
 ### 2. 连通
 
@@ -26,11 +29,11 @@ curl "http://127.0.0.1:8899/ping"                    # 看 ready=true
 curl "http://127.0.0.1:8899/move?dist=30&speed=10"   # 前进30cm
 curl "http://127.0.0.1:8899/turn?angle=90"           # 左转90°
 curl "http://127.0.0.1:8899/head?angle=25"           # 抬头
-curl "http://127.0.0.1:8899/stop"                    # 急停
+curl "http://127.0.0.1:8899/stop"                    # 停止（打断当前动作并清空队列）
 ```
 
 ```python
-from xrobot import XRobot            # examples/xrobot.py，零依赖
+from xrobot import XRobot            # 先把 examples/xrobot.py 放到脚本同目录（或加入 PYTHONPATH）
 r = XRobot("127.0.0.1")
 r.move(30, 10); r.turn(90); r.head(25); r.stop()
 ```
