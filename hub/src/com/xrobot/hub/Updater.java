@@ -373,7 +373,10 @@ public final class Updater {
     }
 
     private void silentInstall(File apk) throws Exception {
-        String cmd = "pm install -r " + apk.getAbsolutePath();
+        // pm install 覆盖自己时系统会立刻杀掉本包（含前台界面），看起来像崩溃。
+        // 把 am start 串在同一 su shell 里：装完无论本进程死活，都会自动拉回主界面。
+        String cmd = "pm install -r " + apk.getAbsolutePath()
+                + " && am start -n com.visbot.robotctl/com.xrobot.hub.MainActivity";
         Process p = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
