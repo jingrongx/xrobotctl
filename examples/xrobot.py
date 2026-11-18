@@ -36,29 +36,29 @@ class XRobot:
             return {"ok": False, "msg": str(e)}
 
     # ----- 动作 -----
-    def move(self, dist=30, speed=8):
-        """前进；speed 为负即后退"""
-        return self.call("move", dist=dist, speed=speed)
+    def move(self, dist=30, speed=8, wait=False):
+        """前进；speed 为负即后退。wait=True 时等到真正执行完才返回"""
+        return self.call("move", dist=dist, speed=speed, wait=int(wait))
 
-    def turn(self, angle=90, speed=60):
+    def turn(self, angle=90, speed=60, wait=False):
         """原地转向；正=左，负=右"""
-        return self.call("turn", angle=angle, speed=speed)
+        return self.call("turn", angle=angle, speed=speed, wait=int(wait))
 
-    def head(self, angle=0, speed=0):
+    def head(self, angle=0, speed=0, wait=False):
         """头部俯仰，-23~+25°"""
-        return self.call("head", angle=angle, speed=speed)
+        return self.call("head", angle=angle, speed=speed, wait=int(wait))
 
     def stop(self):
         """急停（抢占并清空排队动作）"""
         return self.call("stop")
 
-    def goto_color(self, color="red"):
+    def goto_color(self, color="red", wait=False):
         """视觉寻物并走过去"""
-        return self.call("goto", color=color)
+        return self.call("goto", color=color, wait=int(wait))
 
-    def detect(self, color="red"):
+    def detect(self, color="red", wait=False):
         """只检测目标，不驱动"""
-        return self.call("detect", color=color)
+        return self.call("detect", color=color, wait=int(wait))
 
     # ----- 查询 -----
     def ping(self):

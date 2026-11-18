@@ -116,6 +116,8 @@ public final class LocalHttpServer {
                 path = target.substring(0, q);
                 parseQuery(target.substring(q + 1), params);
             }
+            // POST body：支持 JSON 与 form-urlencoded，合并进参数（body 优先）
+            if (body.length() > 0) parseBody(body.toString(), params);
 
             // 命令名：优先 query 的 command，否则取路径首段
             String command = params.get("command");
@@ -129,8 +131,9 @@ public final class LocalHttpServer {
             float a = f(param(params, "dist", "angle", "arg1", "a"), def1(command));
             float b = f(param(params, "speed", "arg2", "b"), def2(command));
             String color = param(params, "color", "arg");
+            boolean wait = isTrue(params.get("wait"));
 
-            Bundle result = CommandQueue.get().exec(command, a, b, color);
+            Bundle result = CommandQueue.get().exec(command, a, b, color, wait);
             String json = bundleToJson(result);
 
             byte[] payload = json.getBytes(Charset.forName("UTF-8"));
@@ -169,6 +172,37 @@ public final class LocalHttpServer {
             if (v != null && !v.isEmpty()) return v;
         }
         return null;
+    }
+
+    private static boolean isTrue(String s) {
+        return "1".equals(s) || "true".equalsIgnoreCase(s) || "yes".equalsIgnoreCase(s);
+    }
+
+    /** 解析 POST body：JSON 对象或 form-urlencoded，键统一小写 */
+    private static void parseBody(String body, Map<String, String> out) {
+        if (body == null || body.trim().isEmpty()) return;
+        String b = body.trim();
+        if (b.startsWith("{")) {
+            // 简单 JSON 对象：{"key":value, ...}，value 为数字/字符串/布尔
+            String inner = b.substring(1, Math.max(1, b.length() - 1));
+            for (String pair : inner.split(",")) {
+                int i = pair.indexOf(':');
+                if (i < 0) continue;
+                String k = unquote(pair.substring(0, i).trim()).toLowerCase(Locale.US);
+                String v = unquote(pair.substring(i + 1).trim());
+                if (!k.isEmpty()) out.put(k, v);
+            }
+        } else {
+            parseQuery(b, out);
+        }
+    }
+
+    private static String unquote(String s) {
+        if (s == null) return null;
+        if (s.length() >= 2 && s.charAt(0) == '"' && s.charAt(s.length() - 1) == '"') {
+            return s.substring(1, s.length() - 1);
+        }
+        return s;
     }
 
     private static float f(String s, float def) {

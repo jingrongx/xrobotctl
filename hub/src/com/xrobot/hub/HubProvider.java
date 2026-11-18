@@ -39,7 +39,11 @@ public final class HubProvider extends ContentProvider {
         try {
             float[] p = parseParams(method, arg, extras);
             String color = parseColor(method, arg, extras);
-            return CommandQueue.get().exec(method, p[0], p[1], color);
+            // 兼容：extras 里可选 wait=true 请求同步执行，默认异步（低延迟）
+            boolean wait = extras != null && (extras.getBoolean("wait", false)
+                    || "1".equals(String.valueOf(extras.get("wait")))
+                    || "true".equalsIgnoreCase(String.valueOf(extras.get("wait"))));
+            return CommandQueue.get().exec(method, p[0], p[1], color, wait);
         } catch (Throwable t) {
             Log.e(TAG, "call " + method + " 失败", t);
             Bundle out = new Bundle();

@@ -35,9 +35,13 @@ curl "http://$HOST:8899/head?angle=25"             # 抬头25°
 curl "http://$HOST:8899/stop"                      # 急停
 curl "http://$HOST:8899/goto?color=red"            # 找红色目标并走过去
 
+# wait=1：等到动作真正执行完才返回（确认执行，~300ms）
+curl "http://$HOST:8899/turn?angle=90&wait=1"
+# 返回 {"ok":true,"executed":true,"waited_ms":0,"pending":0,"mode":"sync"}
+
 # POST JSON（等价写法）
 curl -X POST "http://$HOST:8899/move" -H "Content-Type: application/json" \
-     -d '{"dist":30,"speed":10}'
+     -d '{"dist":30,"speed":10,"wait":true}'
 ```
 
 返回示例：
@@ -59,6 +63,15 @@ curl -X POST "http://$HOST:8899/move" -H "Content-Type: application/json" \
 (Invoke-RestMethod "http://127.0.0.1:8899/ping") | ConvertTo-Json
 Invoke-RestMethod "http://127.0.0.1:8899/move?dist=30&speed=10"
 ```
+
+## 速度与就绪
+
+- **不用先 ping 等就绪**：中枢在动作下发前会自动等底层 SDK（最长 8 秒），直接发命令即可
+- **异步（默认）**：~10ms 返回，`mode:queued`，适合高频连续调用
+- **同步（`wait=1`）**：~300ms 返回，带 `executed:true`，适合要确认执行的关键动作
+- 查询类（ping/status/queue）~10-20ms
+
+延迟主要来自 300ms 命令间隔（保护底层），不是网络。用 `/queue` 的 `pending` 看积压。
 
 ## 多调用方不冲突
 
