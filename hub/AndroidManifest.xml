@@ -19,11 +19,6 @@
         android:label="XRobot 中枢"
         android:debuggable="true">
 
-        <provider
-            android:name="com.xrobot.hub.HubProvider"
-            android:authorities="com.xrobot.hub.api;com.visbot.robotctl.api"
-            android:exported="true" />
-
         <service
             android:name="com.xrobot.hub.HubService"
             android:exported="false" />

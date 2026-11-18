@@ -12,7 +12,7 @@ import com.xrobot.hub.driver.VisbotDriver;
  * 中枢进程入口。
  *
  * 在 Application.onCreate 里完成三件事：
- * - 初始化底层 SDK（Provider 可能在 Activity 之前收到调用，晚初始化会丢命令）
+ * - 初始化底层 SDK（HTTP 服务可能在 Activity 之前收到调用，晚初始化会丢命令）
  * - 注册驱动
  * - 启动本地 HTTP 服务 + 命令队列
  */

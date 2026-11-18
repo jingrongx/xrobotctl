@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   调用方无需自己 ping 判断、无需重试。等待耗时体现在返回的 waited_ms 里。
  * - 查询类命令（ping/status/info/capabilities/queue）只读，不进队列，立即返回。
  * - stop 抢占：清空尚未执行的动作 + 立刻下发急停，不受队列阻塞。
- * - ContentProvider 与 HTTP 服务共用本队列，因此新旧调用方之间也不会打架。
+ * - HTTP 服务与 App 内界面共用本队列，多个调用方之间也不会打架。
  *
  * 返回语义：
  * - 默认（异步）：动作入队即返回 ok，附 pending=排队数、mode=queued（低延迟 ~10ms）。
@@ -142,7 +142,7 @@ public final class CommandQueue {
     private android.content.Context currentContext() { return appCtx; }
 
     /**
-     * 统一入口：Provider 和 HTTP 都调用它。
+     * 统一入口：HTTP 服务和 App 内界面都调用它。
      * @param wait true=同步等执行完；false=入队即返回
      */
     public Bundle exec(String method, float a, float b, String color, boolean wait) {

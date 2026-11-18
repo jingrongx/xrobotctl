@@ -2,7 +2,7 @@ package com.xrobot.hub;
 
 import android.os.Bundle;
 
-/** 中枢公共工具：命令→能力映射、能力检查、错误封装。Provider 与队列共用。 */
+/** 中枢公共工具：命令→能力映射、能力检查、错误封装。命令队列使用。 */
 final class Hub {
 
     /** 把动作方法映射到能力名；非动作返回 null */

@@ -9,4 +9,4 @@
 
 放到本目录后运行 `tools/build_hub.sh`。
 
-**如果用的是自编译 ROM 或其他机器，请换成对应 ROM 的 platform key**——签名不匹配会拿不到权限，HubProvider 里底层 SDK 调用会失败。
+**如果用的是自编译 ROM 或其他机器，请换成对应 ROM 的 platform key**——签名不匹配会拿不到权限，底层 SDK 调用会失败。

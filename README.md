@@ -2,8 +2,7 @@
 
 一个 Android 中枢服务：让**任何程序用最简单的方式**控制机器人，屏蔽底层 SDK、签名、硬件差异。
 
-- **首选：本地 HTTP 服务** —— 任何语言发个 HTTP 请求即可，零依赖、不冲突
-- 兼容：ContentProvider 与 `XRobot.java` 客户端（老调用方不用改）
+- **本地 HTTP 服务** —— 任何语言发个 HTTP 请求即可，零依赖、不冲突
 - 目前内置 **优必选「小方头」** 驱动；架构为多机器人设计，加新型号只需实现一个驱动接口
 
 ---
@@ -40,17 +39,17 @@ r.move(30, 10); r.turn(90); r.head(25); r.stop()
 
 ---
 
-## 为什么用 HTTP（而不是拷 XRobot.java）
+## 为什么用 HTTP
 
-| | HTTP 服务（推荐） | ContentProvider / XRobot.java |
-|---|---|---|
-| 依赖 | 无，任何语言的标准库即可 | 需拷 Java 文件 / jar 进工程 |
-| 调用方 | App、脚本、CLI、网页、其他设备 | 仅 Java/Android App |
-| 调试 | 浏览器/curl 直接看 JSON | 需写代码或 `content call` |
-| 多调用方冲突 | 中枢串行队列统一解决 | 各调用方各自处理 |
-| 跨机器人 | 调用方无感 | 换 authority 需改代码 |
+| 优点 | 说明 |
+|---|---|
+| 零依赖 | 任何语言的标准库发 HTTP 请求即可，不用拷 Java 文件或 jar |
+| 调用方不限 | App、脚本、CLI、网页、其他设备都能调 |
+| 易调试 | 浏览器 / curl 直接看 JSON |
+| 不冲突 | 中枢串行队列统一处理所有并发调用 |
+| 换机器人无感 | 调用方不感知底层驱动差异 |
 
-两者都走**同一个串行命令队列**，所以可以混用：老 App 继续用 Provider，新代码用 HTTP，互不冲突。
+所有调用（含 App 内界面按钮）都走**同一个串行命令队列**，并发不会打架。
 
 ---
 
@@ -58,8 +57,7 @@ r.move(30, 10); r.turn(90); r.head(25); r.stop()
 
 ```
 任意调用方 ──HTTP :8899──> LocalHttpServer ──┐
-老 App     ──Provider────> HubProvider     ──┤
-旅游宝     ──content call─┘                  │
+App 界面按钮 ─────────────> CommandQueue  ───┤
                               ┌──────────────┴─────────────┐
                               │  CommandQueue（串行队列）     │
                               │  · 动作逐条下发 + 300ms 间隔  │
@@ -102,11 +100,9 @@ r.move(30, 10); r.turn(90); r.head(25); r.stop()
 ## 目录结构
 
 ```
-client/            旧版客户端 SDK（Provider 方式，仍可用）
-  src/.../XRobot.java
 hub/               中枢服务 APK
   AndroidManifest.xml
-  src/.../hub/     中枢：HTTP服务 / 命令队列 / Provider / 驱动接口 / 注册表
+  src/.../hub/     中枢：HTTP服务 / 命令队列 / 界面 / 自动更新 / 驱动接口 / 注册表
   src/.../driver/  各机型驱动
   src/com/visbot/  小方头底层（SDK 反射、运动、视觉）
 examples/          各语言零依赖调用示例（Python/curl/Java/JS）
@@ -120,7 +116,6 @@ docs/              文档
 ## 构建
 
 ```bash
-./tools/build_client.sh    # 旧版 Provider 客户端 jar（可选）
 ./tools/build_hub.sh       # 中枢 APK（需平台签名）→ hub/out/XRobotHub.apk
 ```
 
@@ -154,10 +149,8 @@ docs/              文档
 ## 详细文档
 
 - **[应用内自动更新](docs/自动更新.md)** — 界面、测速线路、安装策略、版本对齐
-- **[HTTP 接口](docs/HTTP接口.md)** — 命令清单、参数、并发规则（首选）
+- **[HTTP 接口](docs/HTTP接口.md)** — 命令清单、参数、并发规则
 - [示例集](examples/) — Python / curl / Java / JS 零依赖模板
-- [客户端集成指南](docs/客户端集成.md) — Provider 方式（旧版）
 - [新增机器人驱动](docs/新增机器人驱动.md) — 如何接入新机型
 - [部署说明](docs/部署说明.md) — root、平台签名、SDK dex、常驻要点
 - [发版说明](docs/发版说明.md) — 自动发版流程、版本规则、Secrets 配置
-- [命令协议](docs/命令协议.md) — Provider 方法与参数

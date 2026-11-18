@@ -29,10 +29,11 @@ fi
 echo "[2/3] 安装中枢（覆盖旧版，保留包名 com.visbot.robotctl）"
 "$A" install -r "$APK"
 
-echo "[3/3] 启动中枢进程（Application 里初始化 SDK + 注册驱动）"
-"$A" shell am start -n com.visbot.robotctl/com.xrobot.hub.DebugActivity >/dev/null 2>&1 || true
+echo "[3/3] 启动中枢界面（Application 里初始化 SDK + 注册驱动 + HTTP 服务）"
+"$A" shell am start -n com.visbot.robotctl/com.xrobot.hub.MainActivity >/dev/null 2>&1 || true
 sleep 3
 
-echo "=== 自检 ==="
-"$A" shell content call --uri content://com.xrobot.hub.api --method ping
-"$A" shell content call --uri content://com.xrobot.hub.api --method capabilities
+echo "=== 自检（HTTP :8899）==="
+"$A" forward tcp:8899 tcp:8899 >/dev/null
+curl -s "http://127.0.0.1:8899/ping"; echo
+curl -s "http://127.0.0.1:8899/capabilities"; echo

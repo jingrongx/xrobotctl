@@ -31,7 +31,7 @@ public final class Sdk {
         }
     }
 
-    /** 等待 SDK 初始化完成（provider 可能比 Application 先收到调用） */
+    /** 等待 SDK 初始化完成（HTTP 请求可能先于就绪到达） */
     public static boolean waitReady(long ms) {
         long end = System.currentTimeMillis() + ms;
         while (robotContext == null && System.currentTimeMillis() < end) {
